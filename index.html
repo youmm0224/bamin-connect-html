@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=8ebfc7819ee0df06d9f94e7991cad2da&libraries=services"></script>
+    <title>카카오 지도 api 테스트</title>
+</head>
+<body>
+    <p>
+        <label>검색할 키워드를 입력하세요.</label>
+        <input type="text" id="keyword">
+        <button onclick="search()">검색</button>        
+    </p>
+    <p>
+        <h4>현재 좌표</h4>
+        <label>x: </label>
+        <span style="color:blue" id="geoX"></span>
+        <label>y: </label>
+        <span style="color:blue" id="geoY"></span>
+    </p>
+    <div id="map" style="width:80%;height:500px;"></div>
+    <script type="text/javascript">
+    </script>
+    <script>
+        var appLink = {
+                userAgent: navigator.userAgent.toLowerCase(),
+                os: "",
+                iosId: "573144133",
+                iosAppId: "bgfcuk",
+                androidId: "bgfcuk",
+                androidAppId: "com.bgfcu.membership",
+                deepLink: "",
+                init: function () {
+                    appLink.link();
+                },
+                link: function () {
+                    if (appLink.userAgent.search("android") > -1) {
+                        appLink.os = "android";
+                        appLink.deepLink = "introactivity/sns?" + parameter;
+                    } else if ((appLink.userAgent.search("iphone") > -1) || (appLink.userAgent.search("ipod") > -1) || (appLink.userAgent.search("ipad") > -1)) {
+                        appLink.os = "ios";
+                        appLink.deepLink = "sns?" + parameter;
+                    } else {
+                        appLink.os = "other";
+                    }
+
+                    var clickedAt = (new Date()).getTime();
+
+                    if (appLink.os == "ios") {
+                        location.href = appLink.iosAppId + "://" + appLink.deepLink;
+                        setTimeout(function () {
+                            if ((new Date()).getTime() - clickedAt < 2000) {
+                                //location.href = "https://itunes.apple.com/app/id" + appLink.iosId + "?mt=8";
+                                location.href = "https://itunes.apple.com/app/id573144133";
+                            }
+                        }, 1000);
+                    } else if (appLink.os == "android") {
+                        var chrome25 = appLink.userAgent.search("chrome") > -1 && navigator.appVersion.match(/Chrome\/\d+.\d+/)[0].split("/")[1] > 25;
+                        var kitkatWebview = appLink.userAgent.indexOf("naver") != -1 || appLink.userAgent.indexOf("daum") != -1;
+                        var androidversion = parseFloat(window.navigator.userAgent.match(/Android\s+([\d\.]+)/)[1]).toFixed(1);
+                        if (chrome25 && !kitkatWebview) {
+                            setTimeout(function () {
+                                location.href = "intent://" + appLink.deepLink + "#Intent;scheme=" + appLink.androidId + ";package=" + appLink.androidAppId + ";end";
+                            }, 500);
+                        } else {
+                            setTimeout(function () {
+                                $("body").append("<div style='display:none;'><iframe id='frm' src='" + appLink.androidId + "://" + appLink.deepLink + "' width=0 height=0 frameborder=0></iframe></div>");
+                            }, 500);
+                            setTimeout(function () {
+                                var iframe = $("#frm");
+                                if (iframe.length > 0) {
+                                    iframe.remove();
+                                }
+                            }, 500);
+
+                            setTimeout(function () {
+                                location.href = "intent://" + appLink.deepLink + "#Intent;scheme=" + appLink.androidId + ";package=" + appLink.androidAppId + ";end";
+                            }, 500);
+                        }
+                    } else {
+                        if (appLink.os == "ios") {
+                            //location.href = "https://itunes.apple.com/app/id" + appLink.iosId + "?mt=8";
+                            location.href = "https://itunes.apple.com/app/id573144133";
+                        } else {
+                            location.href = "https://play.google.com/store/apps/details?id=" + appLink.androidAppId;
+                        }
+                    }
+                }
+            };
+        
+        </script>
+    <script>
+        var page = 1;
+        var size = 15;
+        $(function () {            
+           
+            
+        })
+        function search() {
+            storeArr = [];
+            alert(' /// geolocation: ' + ("geolocation" in navigator))
+            navigator.geolocation.getCurrentPosition(function (position) {
+                alert(' /// latitude / longitude: ', position.coords.latitude, '/', position.coords.longitude)
+                $('#geoX').text(position.coords.longitude)
+                $('#geoY').text(position.coords.latitude)
+                getStoreList(position.coords.latitude, position.coords.longitude)
+            }, function (err) {
+                console.log(err)
+            })
+        }
+        function getStoreList(lat, long) {
+            $.ajax({
+                url: 'https://dapi.kakao.com/v2/local/search/keyword.json',
+                headers: { Authorization: 'KakaoAK d3f873739f95b844fbf1d31b26c3455e' },
+                data: { query: $('#keyword').val(), x: long, y: lat, page: page, size: size },
+                success: function (res) { 
+                    drawMap({lat: lat, long: long}, res.documents, res.meta.is_end, res.meta.total_count);
+                }
+            })
+        }
+        var storeArr = [];
+        function drawMap (center, stores, isend, totalCount) {
+            var mapContainer = document.getElementById('map'), // 지도를 표시할 div 
+            mapOption = {
+                center: new kakao.maps.LatLng(center.lat, center.long), // 지도의 중심좌표
+                level: 3 // 지도의 확대 레벨
+            };
+            // 지도를 생성합니다    
+            var map = new kakao.maps.Map(mapContainer, mapOption); 
+            
+            stores.forEach(function(store) {
+                storeArr.push(store)
+            })
+            console.log('isend, totalCount, storeArrLength: ', isend, totalCount, storeArr.length)
+            if (!isend && storeArr.length < totalCount) {
+                page+=1;
+                getStoreList(center.lat, center.long);
+            } else if(isend) {
+                storeArr.forEach(function (store) {
+                    createMarker(map, store.y, store.x, store.place_name, store.place_url);
+                })
+                // 지도의 중심을 결과값으로 받은 위치로 이동시킵니다
+                map.setCenter(new kakao.maps.LatLng(storeArr[0].y, storeArr[0].x));
+            }
+
+        }
+        function createMarker (map, lat, long, name, url) {            
+            var coords = new kakao.maps.LatLng(lat, long);
+
+            // 결과값으로 받은 위치를 마커로 표시합니다
+            var marker = new kakao.maps.Marker({
+                map: map,
+                position: coords
+            });
+
+            // 인포윈도우로 장소에 대한 설명을 표시합니다
+            var infowindow = new kakao.maps.InfoWindow({
+                content: '<div style="width:150px;text-align:center;padding:6px 0;"><a href="'+url+'" target="_blank">'+ name +'</a></div>'
+            });
+            infowindow.open(map, marker);
+
+            kakao.maps.event.addListener(marker, 'click', function () {
+                // 마커 위에 인포윈도우를 표시합니다
+                infowindow.open(map, marker);
+                console.log('event')
+            });
+        }
+    </script>
+</body>
+</html>
